@@ -1,0 +1,14 @@
+# harvester4chem-js:
+#   filter: rjsmin
+#   output: ckanext-harvester4chem/%(version)s-harvester4chem.js
+#   contents:
+#     - js/harvester4chem.js
+#   extra:
+#     preload:
+#       - base/main
+
+# harvester4chem-css:
+#   filter: cssrewrite
+#   output: ckanext-harvester4chem/%(version)s-harvester4chem.css
+#   contents:
+#     - css/harvester4chem.css
