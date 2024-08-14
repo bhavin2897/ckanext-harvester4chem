@@ -1,4 +1,6 @@
-[![Tests](https://github.com/bhavin2897/ckanext-harvester4chem/workflows/Tests/badge.svg?branch=main)](https://github.com/bhavin2897/ckanext-harvester4chem/actions)
+
+
+[![CKAN](https://img.shields.io/badge/ckan-2.9-orange.svg?style=flat-square)](https://github.com/ckan/ckan/tree/2.9)
 
 # ckanext-harvester4chem
 
@@ -7,33 +9,9 @@
 
 ## Requirements
 
-**TODO:** For example, you might want to mention here which versions of CKAN this
-extension works with.
-
-If your extension works across different versions you can add the following table:
-
-Compatibility with core CKAN versions:
-
-| CKAN version    | Compatible?   |
-| --------------- | ------------- |
-| 2.6 and earlier | not tested    |
-| 2.7             | not tested    |
-| 2.8             | not tested    |
-| 2.9             | not tested    |
-
-Suggested values:
-
-* "yes"
-* "not tested" - I can't think of a reason why it wouldn't work
-* "not yet" - there is an intention to get it working
-* "no"
-
 
 ## Installation
 
-**TODO:** Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
 
 To install ckanext-harvester4chem:
 
