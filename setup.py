@@ -67,6 +67,7 @@ setup(
         chemotionharvester=     ckanext.harvester4chem.harvesters.chemotion_repo:ChemotionRepoHarvester
         oaipmh_harvester=       ckanext.harvester4chem.harvesters.oaipmh:OaipmhHarvester
         oaipmh_dc_harvester=    ckanext.harvester4chem.harvesters.oaipmh_dc:OaipmhDCHarvester
+        dataverse_harvester=    ckanext.harvester4chem.harvesters.dataverse_harvester:DataVerseHarvester
         
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
