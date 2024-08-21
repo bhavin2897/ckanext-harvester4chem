@@ -62,11 +62,11 @@ setup(
     entry_points='''
         [ckan.plugins]
         
-        bioschemaharvester=     ckanext.harvester4chem.harvester.bioschemascrap:BioSchemaMUHarvester
-        nmrxivharvester=        ckanext.harvester4chem.harvester.nmrXiv_harvester:NMRxIVBioSchema
-        chemotionharvester=     ckanext.harvester4chem.harvester.chemotion_repo:ChemotionRepoHarvester
-        oaipmh_harvester=       ckanext.harvester4chem.harvester:oaipmh:OaipmhHarvester
-        oaipmh_dc_harvester=    ckanext.harvester4chem.harvester:oaipmh_dc:OaipmhDCHarvester
+        bioschemaharvester=     ckanext.harvester4chem.harvesters.bioschemascrap:BioSchemaMUHarvester
+        nmrxivharvester=        ckanext.harvester4chem.harvesters.nmrXiv_harvester:NMRxIVBioSchema
+        chemotionharvester=     ckanext.harvester4chem.harvesters.chemotion_repo:ChemotionRepoHarvester
+        oaipmh_harvester=       ckanext.harvester4chem.harvesters.oaipmh:OaipmhHarvester
+        oaipmh_dc_harvester=    ckanext.harvester4chem.harvesters.oaipmh_dc:OaipmhDCHarvester
         
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
