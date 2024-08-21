@@ -1,6 +1,9 @@
 name: Tests
+
 on: [push, pull_request]
+
 jobs:
+  # Lint job using flake8
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -8,21 +11,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Install requirements
+      - name: Install flake8
         run: pip install flake8 pycodestyle
       - name: Check syntax
         run: flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics --exclude ckan
-      - name: Run flake8
+      - name: Run flake8 for style checks
         run: flake8 . --count --max-line-length=127 --statistics --exclude ckan
 
+  # Test job using CKAN versions
   test:
-    needs: lint
+    needs: lint  # This ensures tests run only after linting is successful
     strategy:
       matrix:
         ckan-version: ["2.9"]
       fail-fast: false
 
-    name: CKAN ${{ matrix.ckan-version }}
+    name: CKAN ${{ matrix.ckan-version }} Tests
     runs-on: ubuntu-latest
     container:
       image: ckan/ckan-dev:${{ matrix.ckan-version }}
@@ -37,7 +41,9 @@ jobs:
           POSTGRES_DB: postgres
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
-          image: redis:3
+        image: redis:3
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     env:
       CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
       CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
@@ -47,16 +53,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install requirements
+    - name: Install Python dependencies
       run: |
         pip install -r requirements.txt
         pip install -r dev-requirements.txt
         pip install -e .
-        # Replace default path to CKAN core config file with the one on the container
+
+    - name: Configure CKAN extension for tests
+      run: |
+        # Replace the default path to the CKAN core config file with the one on the container
         sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
-    - name: Setup extension (CKAN >= 2.9)
+
+    - name: Setup extension database (CKAN >= 2.9)
       run: |
         ckan -c test.ini db init
         ckan -c test.ini db upgrade -p pages
+
     - name: Run tests
-      run: pytest --ckan-ini=test.ini --cov=ckanext.pages --cov-report=term-missing --cov-append --disable-warnings ckanext/pages/tests
+      run: |
+        pytest --ckan-ini=test.ini --cov=ckanext.pages --cov-report=term-missing --cov-append --disable-warnings ckanext/pages/tests
