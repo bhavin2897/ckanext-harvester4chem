@@ -153,7 +153,7 @@ class ChemotionRepoHarvester(HarvesterBase):
 
             content = json.loads(harvest_object.content)
             log.debug("in import stage %s" % harvest_object.guid)
-            log.debug(content)  # Occupying to much, space and time
+            log.debug(content)  # Occupying too much, space and time
 
             # get id
             package_dict["inchi_key"] = munge_title_to_name(harvest_object.guid)
@@ -215,7 +215,7 @@ class ChemotionRepoHarvester(HarvesterBase):
                 # Should find something better solution
                 content_hasBioPart = {}
                 package_dict['inchi'] = harvest_object.guid
-                package_dict['inchi_key'] = ''
+                package_dict['inchi_key'] = str()
 
                 pass
 
@@ -459,9 +459,9 @@ class ChemotionRepoHarvester(HarvesterBase):
 
         for values in content.get('variableMeasured', []):  # Safe access to 'variableMeasured'
             variable_measured_dict = {
-                'variableMeasured_name': values.get('name', ''),
-                'variableMeasured_propertyID': values.get('propertyID', ''),
-                'variableMeasured_value': values.get('value', ''),
+                'variableMeasured_name': str(values.get('name', '')),
+                'variableMeasured_propertyID': str(values.get('propertyID', '')),
+                'variableMeasured_value': str(values.get('value', '')),
                 # 'variableMeasured_tsurl': converter_instance.expand(values.get('propertyID', '')),
             }
 

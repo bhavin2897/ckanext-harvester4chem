@@ -371,9 +371,9 @@ class NMRxIVBioSchema(HarvesterBase):
 
         for values in content.get('variableMeasured', []):  # Safe access to 'variableMeasured'
             variable_measured_dict = {
-                'variableMeasured_name': values.get('name', ''),
-                'variableMeasured_propertyID': values.get('propertyID', ''),
-                'variableMeasured_value': values.get('value', ''),
+                'variableMeasured_name': str(values.get('name', '')),
+                'variableMeasured_propertyID': str(values.get('propertyID', '')),
+                'variableMeasured_value': str(values.get('value', '')),
                 'variableMeasured_tsurl': converter_instance.expand(values.get('propertyID','')),
             }
 
