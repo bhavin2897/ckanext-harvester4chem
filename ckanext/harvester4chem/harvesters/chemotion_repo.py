@@ -94,7 +94,7 @@ class ChemotionRepoHarvester(HarvesterBase):
     def fetch_stage(self, harvest_object):
         """
         TODO: Extend this information
-        Fetch scrapable text from the URL/ harvest job
+        Fetch scrape-able text from the URL/ harvest job
 
         :return:
         """
@@ -313,7 +313,7 @@ class ChemotionRepoHarvester(HarvesterBase):
         :param source_config: Configuration from the GUI. It should only take type_chem, offset, limit, date_from, date_to
         which are required for the Swagger API to run
 
-        :return all the required values for the Swagger API to run
+        :return: all the required values for the Swagger API to run
 
         """
         now = datetime.now()
@@ -345,8 +345,8 @@ class ChemotionRepoHarvester(HarvesterBase):
 
     def _get_dataseturl(self, base_url, type_chem, offset, limit, date_from, date_to):
         """
-        :param base_url: receives url, which is a Swagger-API url of chemotion - repo only
-        :param type_chem: Here we currently using Container only for retrieving Datasets!! We can also use it for Sample
+        :param base_url: receives url, which is a Swagger-API url of Chemotion-repo only
+        :param type_chem: Here we're currently using Container only for retrieving Datasets!! We can also use it for Sample
         :param offset: starting Offset
         :param limit: max.1000 which will iterate
         :param date_from: date from which retrieving
