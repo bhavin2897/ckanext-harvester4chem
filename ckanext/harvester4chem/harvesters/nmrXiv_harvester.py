@@ -51,7 +51,7 @@ class NMRxIVBioSchema(HarvesterBase):
     def gather_stage(self, harvest_job):
         """
         Gathers identifiers of each source, gathering them to the next stage for fetching metadata.
-        This stage uses Swagger API provided by nmrXiv, to extract all the identifiers available in the nmrXiv datbase.
+        This stage uses Swagger API provided by nmrXiv, to extract all the identifiers available in the nmrXiv database.
 
         ckan-ily they are converted harvest_object_ids, within the database of the CKAN.
 
@@ -60,12 +60,24 @@ class NMRxIVBioSchema(HarvesterBase):
         """
 
         log.debug("in gather stage: %s" % harvest_job.source.url)
+        something_else = harvest_job.source.config
         harvest_obj_ids = []
 
         base_swagger_api = harvest_job.source.url
-        log.debug("%s" % base_swagger_api)
 
-        for identi in self._get_dataseturl(base_url=base_swagger_api):
+        try:
+            log.debug(f" Config Content:  {json.loads(something_else)}")
+            config_dict= json.loads(something_else)
+            last_page_boolean = config_dict.get("get_last_page")
+            get_last_page_boolean = last_page_boolean if last_page_boolean is not None else False
+        except ValueError:
+            get_last_page_boolean = False
+            pass
+
+
+        log.debug(f"{base_swagger_api} & Config value {get_last_page_boolean}")
+
+        for identi in self._get_dataseturl(base_url=base_swagger_api, get_last_page_only=get_last_page_boolean):
             harvest_obj = HarvestObject(guid=identi, job=harvest_job)
             harvest_obj.save()
             harvest_obj_ids.append(harvest_obj.id)
@@ -79,7 +91,7 @@ class NMRxIVBioSchema(HarvesterBase):
     def fetch_stage(self, harvest_object):
         """
         TODO: Extend this information
-        Fetch scrapable text from the URL/ harvest job
+        Fetch scrape-able text from the URL/ harvest job
 
         :return:
         """
@@ -263,9 +275,10 @@ class NMRxIVBioSchema(HarvesterBase):
             return False
         return True
 
-    def _get_dataseturl(self, base_url):
+    def _get_dataseturl(self, base_url, get_last_page_only=False):
         """
         :param base_url: receives url, which is a Swagger-API url of nmrXiv ONLY
+        :param get_last_page_only: if True, fetches only the last page's data
         :return:
         """
 
@@ -281,16 +294,27 @@ class NMRxIVBioSchema(HarvesterBase):
                 data = response.json()
                 last_page = data['meta']['last_page']
 
-                all_identifiers = []
-                for page_number in range(1, last_page + 1):
-                    page_response = requests.get(f'{base_url_gather}?page={page_number}')
+                if get_last_page_only:
+                    # Fetch only the last page
+                    page_response = requests.get(f'{base_url_gather}?page={last_page}')
                     page_response.raise_for_status()  # Raises an error for bad responses
                     page_data = page_response.json()['data']
 
                     # Using list comprehension for cleaner code
-                    all_identifiers.extend([dataset['identifier'] for dataset in page_data])
+                    last_page_identifiers = [dataset['identifier'] for dataset in page_data]
+                    return last_page_identifiers
 
-                return all_identifiers
+                else:
+                    all_identifiers = []
+                    for page_number in range(1, last_page + 1):
+                        page_response = requests.get(f'{base_url_gather}?page={page_number}')
+                        page_response.raise_for_status()  # Raises an error for bad responses
+                        page_data = page_response.json()['data']
+
+                        # Using list comprehension for cleaner code
+                        all_identifiers.extend([dataset['identifier'] for dataset in page_data])
+
+                    return all_identifiers
 
             except requests.RequestException as e:
                 print(f"Request failed: {e}")
@@ -389,52 +413,58 @@ class NMRxIVBioSchema(HarvesterBase):
         extras = []
         package_id = package['id']
         #
-        content_about = content_hasBioPart['isPartOf']['about']
-        content = content_about['hasBioChemEntityPart'][0]
-        #
-        standard_inchi = content['inChI']
-        #
-        inchi_key = content['inChIKey']
 
-        if standard_inchi.startswith('InChI'):
-            molecu = inchi.MolFromInchi(standard_inchi)
-            log.debug("Molecule generated")
-            try:
-                filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
-                if os.path.isfile(filepath):
-                    log.debug("Image Already exists")
-                else:
-                    Draw.MolToFile(molecu, filepath)
-                    log.debug("Molecule Image generated for %s", package_id)
-
-            except Exception as e:
-                log.error(e)
-
-        # extracting date metadata as extra data.
         try:
-            if content['datePublished']:
-                published = content['datePublished']
-                date_value = parse(published)
-                date_without_tz = date_value.replace(tzinfo=None)
-                value = date_without_tz.isoformat()
-                extras.append({"key": "datePublished", "value": value})
-            if content['dateCreated']:
-                created = content['dateCreated']
-                date_value = parse(created)
-                date_without_tz = date_value.replace(tzinfo=None)
-                value = date_without_tz.isoformat()
-                extras.append({"key": "dateCreated", "value": value})
-            if content['dateModified']:
-                modified = content['dateModified']
-                date_value = parse(modified)
-                date_without_tz = date_value.replace(tzinfo=None)
-                value = date_without_tz.isoformat()
-                extras.append({"key": "dateModified", "value": value})
-        except Exception:
-            pass
+            content_about = content_hasBioPart['isPartOf']['about']
+            content = content_about['hasBioChemEntityPart'][0]
+            #
+            standard_inchi = content['inChI']
+            #
+            inchi_key = content['inChIKey']
 
-        log.debug(f"Data saved to extras {extras}")
-        # return extras
+
+            if standard_inchi.startswith('InChI'):
+                molecu = inchi.MolFromInchi(standard_inchi)
+                log.debug("Molecule generated")
+                try:
+                    filepath = '/var/lib/ckan/default/storage/images/' + str(inchi_key) + '.png'
+                    if os.path.isfile(filepath):
+                        log.debug("Image Already exists")
+                    else:
+                        Draw.MolToFile(molecu, filepath)
+                        log.debug("Molecule Image generated for %s", package_id)
+
+                except Exception as e:
+                    log.error(e)
+
+            # extracting date metadata as extra data.
+            try:
+                if content['datePublished']:
+                    published = content['datePublished']
+                    date_value = parse(published)
+                    date_without_tz = date_value.replace(tzinfo=None)
+                    value = date_without_tz.isoformat()
+                    extras.append({"key": "datePublished", "value": value})
+                if content['dateCreated']:
+                    created = content['dateCreated']
+                    date_value = parse(created)
+                    date_without_tz = date_value.replace(tzinfo=None)
+                    value = date_without_tz.isoformat()
+                    extras.append({"key": "dateCreated", "value": value})
+                if content['dateModified']:
+                    modified = content['dateModified']
+                    date_value = parse(modified)
+                    date_without_tz = date_value.replace(tzinfo=None)
+                    value = date_without_tz.isoformat()
+                    extras.append({"key": "dateModified", "value": value})
+            except Exception:
+                pass
+
+            log.debug(f"Data saved to extras {extras}")
+            # return extras
+        except Exception as e:
+            log.error(f"Error extracting extras: {e}")
+            pass
 
         return None
 
