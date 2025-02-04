@@ -8,6 +8,8 @@ from urllib.error import HTTPError
 import traceback
 import datetime
 from datetime import datetime
+from datetime import timedelta
+
 import requests
 
 from urllib.parse import urlparse, parse_qs
@@ -24,6 +26,8 @@ from ckan.lib.munge import munge_tag
 from ckan.lib.munge import munge_title_to_name
 from ckan.lib.search import rebuild
 from ckanext.harvest.model import HarvestObject
+from ckanext.harvest.model import HarvestObject, UPDATE_FREQUENCIES
+
 
 from rdkit.Chem import inchi
 from rdkit.Chem import rdmolfiles
@@ -67,8 +71,9 @@ class ChemotionRepoHarvester(HarvesterBase):
         harvest_obj_ids = []
 
         try:
-            type_chem, offset, limit, date_from, date_to = self._set_config(harvest_job.source.config)
-            log.debug(type_chem, offset, limit, date_from, date_to)
+            type_chem, offset, limit, date_from, date_to = self._set_config(harvest_job.source.config, harvest_job.source.frequency)
+
+            log.debug("type_chem: %s, offset: %s, limit: %s, date_from: %s, date_to: %s", type_chem, offset, limit, date_from, date_to)
         except Exception as e:
             log.error(e)
 
@@ -302,46 +307,60 @@ class ChemotionRepoHarvester(HarvesterBase):
             return False
         return True
 
-    def _set_config(self, source_config):
-
+    def _set_config(self, source_config, frequency):
         """
         Configuration from GUI is being added here.
         This function also checks which frequency with which harvest process would be proceeded.
 
-        It also checks weather the date and time mentioned and acts accordingly
+        It also checks whether the date and time mentioned and acts accordingly.
 
         :param source_config: Configuration from the GUI. It should only take type_chem, offset, limit, date_from, date_to
-        which are required for the Swagger API to run
+        which are required for the Swagger API to run.
+        :param frequency: Frequency of the harvest process (DAILY, WEEKLY, MONTHLY, BIWEEKLY).
 
-        :return: all the required values for the Swagger API to run
-
+        :return: all the required values for the Swagger API to run.
         """
         now = datetime.now()
+        default = now - timedelta(days=180)
+        daily = now - timedelta(days=1)
+        weekly = now - timedelta(days=5)
+        monthly = now - timedelta(days=30)
+        biweekly = now - timedelta(days=14)
 
         try:
             config_json = json.loads(source_config)
-            log.debug("config_json: %s" % config_json)
 
+            # Handle other configurations
             type_chem = config_json.get("type_chem")
             offset = config_json.get("offset")
-            limit = config_json.get("limit")
-            date_from = config_json.get("date_from")
+            limit = config_json.get("limit", 1000)   # Default limit to 1000 if not provided
             date_to = config_json.get("date_to")
 
-            if limit is None:
-                limit = int(1000)
 
-            if date_from is None:
+            # Handle frequency-based date_from
+            if frequency == 'DAILY':
+                date_from = daily
+            elif frequency == 'WEEKLY':
+                date_from = weekly
+            elif frequency == 'MONTHLY':
+                date_from = monthly
+            elif frequency == 'BIWEEKLY':
+                date_from = biweekly
+            else:
                 date_from = '1971-01-01'
 
+            # Handle date_to
             if date_to is None:
                 date_to = now
+
+            log.debug(f"passed from {date_from}")
+            log.debug(f"passed until {date_to}")
 
             return type_chem, offset, limit, date_from, date_to
 
         except ValueError as e:
             log.error(f"Configuration Error {e}")
-            pass
+            return None, None, None, None, None
 
     def _get_dataseturl(self, base_url, type_chem, offset, limit, date_from, date_to):
         """
