@@ -140,6 +140,8 @@ class ChemotionRepoHarvester(HarvesterBase):
         """
 
         global created, modified, technique_measure
+        content_hasBioPart = {}
+
         if not harvest_object:
             log.error("No harvest object received")
             self._save_object_error("No harvest object received")
@@ -161,10 +163,8 @@ class ChemotionRepoHarvester(HarvesterBase):
             log.debug(content)  # Occupying too much, space and time
 
             # get id
-            package_dict["inchi_key"] = munge_title_to_name(harvest_object.guid)
+            # package_dict["inchi_key"] = munge_title_to_name(harvest_object.guid)
             package_dict["id"] = munge_title_to_name(content["@id"])
-
-            log.debug(f"Here is the package id saved {package_dict['id']}")
 
             package_dict['name'] = content['@id']
 
@@ -205,6 +205,7 @@ class ChemotionRepoHarvester(HarvesterBase):
                 self._extract_extras_image(package=package_dict, content_hasBioPart=content)
                 content_about = content['isPartOf']['about']
                 content_hasBioPart = content_about[0]['hasBioChemEntityPart']
+                log.debug(f" before everything {content_hasBioPart}")
 
                 package_dict['inchi'] = content_hasBioPart['inChI']
                 package_dict['inchi_key'] = content_hasBioPart['inChIKey']
@@ -213,11 +214,16 @@ class ChemotionRepoHarvester(HarvesterBase):
                 package_dict['smiles'] = content_hasBioPart['smiles']
                 package_dict['exactmass'] = content_hasBioPart['molecularWeight']['value']
                 package_dict['mol_formula'] = content_hasBioPart['molecularFormula']
-                package_dict['iupacName'] = content_hasBioPart['iupacName']
+                try:
+                    package_dict['iupacName'] = content_hasBioPart['iupacName']
+                except KeyError as e:
+                    log.debug(f"Skipping ")
+                    pass
 
-            except KeyError:
+            except KeyError as e:
                 # when the inchi is not present, then it takes empty dict.
                 # Should find something better solution
+                log.error(f"Collapsed hasBioPart {e}. Have to be avioded")
                 content_hasBioPart = {}
                 package_dict['inchi'] = harvest_object.guid
                 package_dict['inchi_key'] = str()
@@ -259,9 +265,6 @@ class ChemotionRepoHarvester(HarvesterBase):
 
             # Author information
             try:
-                # double_dict_ispartof = content['isPartOf']['isPartOf']
-                # package_dict['metadata_published'] = double_dict_ispartof['datePublished']
-                # citation_author = double_dict_ispartof['citation']
 
                 author_list = content['author']
 
@@ -272,9 +275,7 @@ class ChemotionRepoHarvester(HarvesterBase):
 
                 # Remove the trailing semicolon and space
                 # package_dict['author'] = package_dict['author'].strip('; ')
-
-                log.debug(package_dict['author'])
-
+                log.debug(f"Thus these are the authors {package_dict['author']}")
             except Exception as e:
                 log.exception(f'Author/date_published Error {e}')
                 pass
@@ -292,6 +293,8 @@ class ChemotionRepoHarvester(HarvesterBase):
 
             rebuild(package_dict["name"])
             Session.commit()
+
+            log.debug(f"content has about has biopart {content_hasBioPart}")
 
             self._send_to_db(package=package_dict, content=content_hasBioPart)
 
